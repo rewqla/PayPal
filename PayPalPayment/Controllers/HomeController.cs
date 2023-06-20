@@ -15,7 +15,7 @@ namespace PayPalPayment.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private PayPal.Api.Payment payment;
+        private Payment payment;
         private IHttpContextAccessor httpContextAccessor;
         IConfiguration _configuration;
         public HomeController(ILogger<HomeController> logger, IHttpContextAccessor context, IConfiguration iconfiguration)
@@ -30,30 +30,27 @@ namespace PayPalPayment.Controllers
             return View();
         }
 
-        public ActionResult PaymentWithPaypal(string Cancel = null, string blogId = "", string PayerID = "", string guid = "")
+        public ActionResult PaymentWithPaypal(string blogId = "", string PayerID = "", string guid = "")
         {
             var ClientID = _configuration.GetValue<string>("PayPal:Key");
             var ClientSecret = _configuration.GetValue<string>("PayPal:Secret");
             var mode = _configuration.GetValue<string>("PayPal:mode");
             APIContext apiContext = PaypalConfiguration.GetAPIContext(ClientID, ClientSecret, mode);
+
             try
             {
-                string payerId = PayerID;
-                if (string.IsNullOrEmpty(payerId))
+                if (string.IsNullOrEmpty(PayerID))
                 {
-                    string baseURI = this.Request.Scheme + "://" + this.Request.Host + "/Home/PaymentWithPayPal?";
-                    var guidd = Convert.ToString((new Random()).Next(100000));
-                    guid = guidd;
-                    var createdPayment = this.CreatePayment(apiContext, baseURI + "guid=" + guid, blogId);
-                    var links = createdPayment.links.GetEnumerator();
-                    string paypalRedirectUrl = null;
-                    while (links.MoveNext())
+                    string baseURI = $"{this.Request.Scheme}://{this.Request.Host}/Home/PaymentWithPayPal?";
+                    guid = Convert.ToString((new Random()).Next(100000));
+
+                    var createdPayment = this.CreatePayment(apiContext, baseURI + "guid=" + guid);
+
+                    string paypalRedirectUrl = createdPayment.links.FirstOrDefault(lnk => lnk.rel.ToLower().Trim() == "approval_url")?.href;
+
+                    if (string.IsNullOrEmpty(paypalRedirectUrl))
                     {
-                        Links lnk = links.Current;
-                        if (lnk.rel.ToLower().Trim().Equals("approval_url"))
-                        {
-                            paypalRedirectUrl = lnk.href;
-                        }
+                        return View("PaymentFailed");
                     }
 
                     httpContextAccessor.HttpContext.Session.SetString("payment", createdPayment.id);
@@ -62,7 +59,7 @@ namespace PayPalPayment.Controllers
                 else
                 {
                     var paymentId = httpContextAccessor.HttpContext.Session.GetString("payment");
-                    var executedPayment = ExecutePayment(apiContext, payerId, paymentId as string);
+                    var executedPayment = ExecutePayment(apiContext, PayerID, paymentId as string);
 
                     if (executedPayment.state.ToLower() != "approved")
                     {
@@ -79,63 +76,73 @@ namespace PayPalPayment.Controllers
                 return View("PaymentFailed");
             }
         }
+
         private Payment ExecutePayment(APIContext apiContext, string payerId, string paymentId)
         {
             var paymentExecution = new PaymentExecution()
             {
                 payer_id = payerId
             };
+
             this.payment = new Payment()
             {
                 id = paymentId
             };
+
             return this.payment.Execute(apiContext, paymentExecution);
         }
-        private Payment CreatePayment(APIContext apiContext, string redirectUrl, string blogId)
+        private Payment CreatePayment(APIContext apiContext, string redirectUrl)
         {
             var itemList = new ItemList()
             {
                 items = new List<Item>()
             };
+
             itemList.items.Add(new Item()
             {
                 name = "Item Detail",
                 currency = "USD",
                 price = "1.00",
-                quantity = "1",
-                sku = "SKU"
+                quantity = "1"
             });
+
+            itemList.items.Add(new Item()
+            {
+                name = "Item Detail",
+                currency = "USD",
+                price = "2.50",
+                quantity = "2"
+            });
+
             var payer = new Payer()
             {
                 payment_method = "paypal"
             };
+
             var redirUrls = new RedirectUrls()
             {
                 cancel_url = redirectUrl + "&Cancel=true",
                 return_url = redirectUrl
             };
-            //var details = new Details()
-            //{
-            //    tax = "1",
-            //    shipping = "1",
-            //    subtotal = "1"
-            //};
+
             var amount = new Amount()
             {
                 currency = "USD",
-                total = "1.00", 
-                                //details = details
+                total = "6"//change to the total price of products or an error!!!
             };
-            var transactionList = new List<Transaction>();
 
-            transactionList.Add(new Transaction()
+            var transactionList = new List<Transaction>
             {
-                description = "Transaction description",
-                invoice_number = Guid.NewGuid().ToString(), //Generate an Invoice No  
-                amount = amount,
-                item_list = itemList
-            });
-            this.payment = new Payment()
+                new Transaction
+                {
+                    description = "Transaction description",
+                    invoice_number = Guid.NewGuid().ToString(),
+                    amount = amount,
+                    item_list = itemList
+                }
+            };
+
+            payment = new Payment()
             {
                 intent = "sale",
                 payer = payer,
@@ -143,7 +150,7 @@ namespace PayPalPayment.Controllers
                 redirect_urls = redirUrls
             };
 
-            return this.payment.Create(apiContext);
+            return payment.Create(apiContext);
         }
     }
 }
