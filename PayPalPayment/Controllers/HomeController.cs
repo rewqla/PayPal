@@ -65,8 +65,20 @@ namespace PayPalPayment.Controllers
                     {
                         return View("PaymentFailed");
                     }
-                    var blogIds = executedPayment.transactions[0].item_list.items[0].sku;
 
+                    var transactionInfo = executedPayment.payer.payer_info;
+                    var result = new PaymentResultViewModel
+                    {
+                        RecipientEmail = transactionInfo.email,
+                        City = transactionInfo.shipping_address.city,
+                        Country = transactionInfo.shipping_address.country_code,
+                        RecipientName = transactionInfo.shipping_address.recipient_name,
+                        State = transactionInfo.shipping_address.state,
+                        Address = transactionInfo.shipping_address.line1 + " " + transactionInfo.shipping_address.line2,
+                        PostalCode = transactionInfo.shipping_address.postal_code,
+                        Total = Convert.ToDecimal(executedPayment.transactions[0].amount.total),
+                        RecipientPhone = transactionInfo.shipping_address.phone == "" ? transactionInfo.shipping_address.phone : transactionInfo.phone,
+                    };
 
                     return View("PaymentSuccess");
                 }
