@@ -8,6 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace PayPalPayment.Controllers
@@ -66,25 +68,28 @@ namespace PayPalPayment.Controllers
                         return View("PaymentFailed");
                     }
 
-                    var transactionInfo = executedPayment.payer.payer_info;
+                    var transaction = executedPayment.transactions[0];
                     var result = new PaymentResultViewModel
                     {
-                        RecipientEmail = transactionInfo.email,
-                        City = transactionInfo.shipping_address.city,
-                        Country = transactionInfo.shipping_address.country_code,
-                        RecipientName = transactionInfo.shipping_address.recipient_name,
-                        State = transactionInfo.shipping_address.state,
-                        Address = transactionInfo.shipping_address.line1 + " " + transactionInfo.shipping_address.line2,
-                        PostalCode = transactionInfo.shipping_address.postal_code,
-                        Total = Convert.ToDecimal(executedPayment.transactions[0].amount.total),
-                        RecipientPhone = transactionInfo.shipping_address.phone == "" ? transactionInfo.shipping_address.phone : transactionInfo.phone,
+                        RecipientEmail = transaction.payee.email,
+                        Total = transaction.amount.total,
+                        City = transaction.item_list.shipping_address.city,
+                        Country = transaction.item_list.shipping_address.country_code,
+                        RecipientName = transaction.item_list.shipping_address.recipient_name,
+                        State = transaction.item_list.shipping_address.state,
+                        Address = transaction.item_list.shipping_address.line1 + " " + transaction.item_list.shipping_address.line2,
+                        PostalCode = transaction.item_list.shipping_address.postal_code,
+                        RecipientPhone = string.IsNullOrEmpty(transaction.item_list.shipping_address.phone) ? "" : transaction.item_list.shipping_address.phone,
+                        PaymentTransactionId = transaction.related_resources[0].sale.id,
+                        OrderDate = DateTimeOffset.Parse(transaction.related_resources[0].sale.create_time).ToString("yyyy-MM-dd")
                     };
 
                     return View("PaymentSuccess");
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return View("PaymentFailed");
             }
         }

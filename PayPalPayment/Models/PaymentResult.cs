@@ -10,7 +10,7 @@
         public string City { get; set; }
         public string Address { get; set; }
         public string PostalCode { get; set; }
-        public decimal Total { get; set; }
+        public string Total { get; set; }
         public string OrderDate { get; set; }
         public string PaymentTransactionId { get; set; }
     }
