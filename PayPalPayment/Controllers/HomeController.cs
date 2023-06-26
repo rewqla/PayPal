@@ -32,7 +32,7 @@ namespace PayPalPayment.Controllers
             return View();
         }
 
-        public ActionResult PaymentWithPaypal(string blogId = "", string PayerID = "", string guid = "")
+        public ActionResult PaymentWithPaypal( string PayerID = "", string guid = "")
         {
             var ClientID = _configuration.GetValue<string>("PayPal:Key");
             var ClientSecret = _configuration.GetValue<string>("PayPal:Secret");
@@ -123,13 +123,13 @@ namespace PayPalPayment.Controllers
                 quantity = "1"
             });
 
-            itemList.items.Add(new Item()
-            {
-                name = "Item Detail",
-                currency = "USD",
-                price = "2.50",
-                quantity = "2"
-            });
+            //itemList.items.Add(new Item()
+            //{
+            //    name = "Item Detail",
+            //    currency = "USD",
+            //    price = "2.50",
+            //    quantity = "2"
+            //});
 
             var payer = new Payer()
             {
@@ -145,7 +145,7 @@ namespace PayPalPayment.Controllers
             var amount = new Amount()
             {
                 currency = "USD",
-                total = "6"//change to the total price of products or an error!!!
+                total = "1"//change to the total price of products or an error!!!
             };
 
             var transactionList = new List<Transaction>

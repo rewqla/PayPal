@@ -1,9 +1,47 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
 }
+<style>
+    .paypal-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 180px;
+        height: 60px;
+        background-color: #ffd700;
+        color: #000;
+        font-family: "Arial", sans-serif;
+        font-size: 18px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
 
+    .paypal-logo {
+        background-image: url(https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/2560px-PayPal.svg.png);
+        background-repeat: no-repeat;
+        background-size: contain;
+        width: 100px;
+        height: 30px;
+    }
+
+    .paypal-button:hover {
+        background-color: #fcbf49;
+    }
+</style>
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
     <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-    <a class="btn btn-primary" href="/Home/PaymentWithPaypal">Pay Now</a>
+
+    <button class="paypal-button" onclick="redirectToPaypal()">
+        <span class="paypal-logo"></span>
+    </button>
+
 </div>
+
+<script>
+    function redirectToPaypal() {
+      window.location.href = "/Home/PaymentWithPaypal";
+    }
+</script>
